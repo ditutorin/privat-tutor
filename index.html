@@ -1573,7 +1573,7 @@ function app() {
     async callAI(prompt) {
       if (!this.cfg.aiKey) throw new Error('AI API Key belum diisi.');
       if (this.cfg.aiProvider === 'gemini') {
-        const model = this.cfg.aiModel || 'gemini-1.5-flash';
+        const model = this.cfg.aiModel || 'gemini-3.8-flash';
         const url = 'https://generativelanguage.googleapis.com/v1beta/models/' + model + ':generateContent?key=' + encodeURIComponent(this.cfg.aiKey);
         const res = await fetch(url, {
           method: 'POST', headers: { 'Content-Type': 'application/json' },
@@ -1583,16 +1583,23 @@ function app() {
         if (!res.ok) throw new Error(j?.error?.message || 'Gemini error');
         return j?.candidates?.[0]?.content?.parts?.map(p => p.text).join('') || '';
       }
-      const model = this.cfg.aiModel || 'gpt-4o-mini';
-      const res = await fetch('https://api.openai.com/v1/chat/completions', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + this.cfg.aiKey },
-        body: JSON.stringify({ model, messages: [{ role:'user', content: prompt }], temperature: 0.7 })
-      });
-      const j = await res.json();
-      if (!res.ok) throw new Error(j?.error?.message || 'OpenAI error');
-      return j?.choices?.[0]?.message?.content || '';
+        const model = this.cfg.aiModel || 'qwen/qwen3.8-27b';
+  const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': 'Bearer ' + this.cfg.aiKey
     },
+    body: JSON.stringify({
+      model,
+      messages: [{ role: 'user', content: prompt }],
+      temperature: 0.7
+    })
+  });
+  const j = await res.json();
+  if (!res.ok) throw new Error(j?.error?.message || 'Groq error');
+  return j?.choices?.[0]?.message?.content || '';
+},
     parseAIJSON(text) {
       let t = (text||'').trim().replace(/^```(?:json)?/i,'').replace(/```$/,'').trim();
       const a = t.indexOf('['), o = t.indexOf('{');
@@ -1878,7 +1885,7 @@ function app() {
       </template>
       <div>
         <label class="label">Supabase URL</label>
-        <input x-model="cfgDraft.supabaseUrl" class="input" placeholder="https://yeuzioircpgnetebxrrb.supabase.co/" :disabled="configHardcoded">
+        <input x-model="cfgDraft.supabaseUrl" class="input" placeholder="https://yeuzioircpgnetebxrrb.supabase.co" :disabled="configHardcoded">
       </div>
       <div>
         <label class="label">Supabase Anon Key</label>
@@ -1889,7 +1896,7 @@ function app() {
           <label class="label">AI Provider</label>
           <select x-model="cfgDraft.aiProvider" class="input">
             <option value="gemini">Google Gemini</option>
-            <option value="openai">OpenAI</option>
+            <option value="groq">Groq</option>
           </select>
         </div>
         <div>
